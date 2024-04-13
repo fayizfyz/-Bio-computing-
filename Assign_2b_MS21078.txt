@@ -1,0 +1,176 @@
+echo "Q1)Find whether there are one or more than one ORFs in the mRNA seque>
+
+#Function to find number of ORF in the sequence
+numb_orf() {
+    local sequence=$1
+    local pattern="ATG"
+    local count=0
+
+    while [[ $sequence =~ $pattern ]]; do
+        sequence=${sequence#*"${BASH_REMATCH[0]}"}
+        ((count++))
+    done
+
+    echo "$count"
+}
+# Function to read a FASTA file
+read_fasta_and_orfs() {
+    local file=$1
+    local id=""
+    local seq=""
+
+    while IFS= read -r line; do
+        if [[ $line =~ ^\>(.*) ]]; then
+            if [ -n "$id" ]; then
+                orfs=$(numb_orf "$seq")
+                if [ -n "$orfs" ]; then
+                    echo "ORFs in sequence: $id"
+                    echo "$orfs"
+                    echo
+                else
+                    echo "No ORFs found in sequence: $id"
+                fi
+            fi
+            id=${BASH_REMATCH[1]}
+            seq=""
+        else
+            seq+="$line"
+        fi
+    done < "$file"
+}
+
+fasta_file="file.fasta"
+read_fasta_and_orfs  "$fasta_file"
+
+
+
+
+###########################################################################>
+echo "Q2)Use functions to perform Q4 of ws1 and ws2"
+
+echo "Part A: Function to Find the the ORF in the input sequence of the fas>
+
+#!/bin/bash
+
+# Function to find ORF
+find_orfs() {
+    local sequence=$1
+    local start_codons="(ATG|GTG)"
+    local stop_codons="(TAG|TAA|TGA)"
+    local orf_pattern="$start_codons.*?$stop_codons"
+
+    # grep command
+    grep -oP "$orf_pattern" <<< "$sequence"
+}
+# Function to read a FASTA file
+read_fasta_and_find_orfs() {
+    local filename=$1
+    local current_id=""
+    local current_seq=""
+
+    while IFS= read -r line; do
+        if [[ $line =~ ^\>(.*) ]]; then
+            if [ -n "$current_id" ]; then
+                orfs=$(find_orfs "$current_seq")
+                if [ -n "$orfs" ]; then
+                    echo "ORFs in sequence: $current_id"
+                    echo "$orfs"
+                    echo
+                else
+                    echo "No ORFs found in sequence: $current_id"
+                fi
+            fi
+            current_id=${BASH_REMATCH[1]}
+            current_seq=""
+        else
+            current_seq+="$line"
+        fi
+    done < "$filename"
+
+    # Find ORFs in the last sequence in the file
+    if [ -n "$current_id" ]; then
+        orfs=$(find_orfs "$current_seq")
+        if [ -n "$orfs" ]; then
+            echo "ORFs in sequence: $current_id"
+            echo "$orfs"
+            echo
+        else
+            echo "No ORFs found in sequence: $current_id"
+        fi
+ fi
+}
+
+#  calling function
+fasta_file="file.fasta"
+read_fasta_and_find_orfs "$fasta_file"
+
+
+
+
+####################################################################3
+echo "Part B: Find the number of sequences in the fasta file. Compute the c>
+
+
+#!/bin/bash
+
+# Function to count the number of sequences in the FASTA file
+count_sequences() {
+    local filename=$1
+    local count=0
+
+    while IFS= read -r line; do
+        if [[ $line =~ ^\> ]]; then
+            ((count++))
+        fi
+    done < "$filename"
+
+    echo "$count"
+}
+# Function to compute the composition of A/T/G/C for each sequence
+composition() {
+    local filename=$1
+    local curr_seq=""
+    local A_count=0
+    local T_count=0
+    local G_count=0
+    local C_count=0
+
+    while IFS= read -r line; do
+        if [[ $line =~ ^\>(.*) ]]; then
+            if [ -n "$curr_seq" ]; then
+                echo "Composition for sequence: $current_id"
+                echo "A: $A_count"
+                echo "T: $T_count"
+                echo "G: $G_count"
+                echo "C: $C_count"
+                echo
+            fi
+            current_id=${BASH_REMATCH[1]}
+            curr_seq=""
+            A_count=0
+            T_count=0
+            G_count=0
+            C_count=0
+        else
+            curr_seq+="$line"
+            A_count=$((A_count + $(grep -o 'A' <<< "$line" | wc -l)))
+            T_count=$((T_count + $(grep -o 'T' <<< "$line" | wc -l)))
+            G_count=$((G_count + $(grep -o 'G' <<< "$line" | wc -l)))
+            C_count=$((C_count + $(grep -o 'C' <<< "$line" | wc -l)))
+        fi
+    done < "$filename"
+ # Output composition for the last sequence
+    echo "Composition for sequence: $current_id"
+    echo "A: $A_count"
+    echo "T: $T_count"
+    echo "G: $G_count"
+    echo "C: $C_count"
+}
+
+# Usage
+fasta_file="file.fasta"
+
+echo "Number of sequences in the file: $(count_sequences "$fasta_file")"
+echo
+composition "$fasta_file"
+###########################################################################################
